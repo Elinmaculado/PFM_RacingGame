@@ -8,6 +8,8 @@ using UnityEngine.UI;
 public class PrometeoCarController : NetworkBehaviour
 {
 
+    [Header("CAMERA")]
+    public Camera myCamera;
     //CAR SETUP
 
       [Space(20)]
@@ -149,9 +151,16 @@ public class PrometeoCarController : NetworkBehaviour
       WheelFrictionCurve RRwheelFriction;
       float RRWextremumSlip;
 
+
+      
     // Start is called before the first frame update
+    //OnStart
     void Start()
     {
+      myCamera = GetComponentInChildren<Camera>();
+      if(!isLocalPlayer)
+        myCamera.enabled = false;
+      
       //In this part, we set the 'carRigidbody' value with the Rigidbody attached to this
       //gameObject. Also, we define the center of mass of the car with the Vector3 given
       //in the inspector.
@@ -283,9 +292,10 @@ public class PrometeoCarController : NetworkBehaviour
       if (useTouchControls && touchControlsSetup){
 
         if(throttlePTI.buttonPressed){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          GoForward();
+          //CancelInvoke("DecelerateCar");
+          //deceleratingCar = false;
+          //GoForward();
+          CMDGoForward();
         }
         if(reversePTI.buttonPressed){
           CancelInvoke("DecelerateCar");
