@@ -291,6 +291,7 @@ public class PrometeoCarController : NetworkBehaviour
       */
       if (useTouchControls && touchControlsSetup){
 
+            //Touch Inputs
         if(throttlePTI.buttonPressed){
           //CancelInvoke("DecelerateCar");
           //deceleratingCar = false;
@@ -330,6 +331,7 @@ public class PrometeoCarController : NetworkBehaviour
 
       }else{
 
+        // Mover con teclado
         if(Input.GetKey(KeyCode.W))
         {
           CMDGoForward();
@@ -599,9 +601,10 @@ public class PrometeoCarController : NetworkBehaviour
           // could be a bit higher than expected.
     			frontLeftCollider.motorTorque = 0;
     			frontRightCollider.motorTorque = 0;
-          rearLeftCollider.motorTorque = 0;
+                rearLeftCollider.motorTorque = 0;
     			rearRightCollider.motorTorque = 0;
-    		}
+    		
+        }
       }
     }
 
