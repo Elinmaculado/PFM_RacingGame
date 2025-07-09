@@ -1,22 +1,15 @@
-/*
-MESSAGE FROM CREATOR: This script was coded by Mena. You can use it in your games either these are commercial or
-personal projects. You can even add or remove functions as you wish. However, you cannot sell copies of this
-script by itself, since it is originally distributed as a free product.
-I wish you the best for your project. Good luck!
-
-P.S: If you need more cars, you can check my other vehicle assets on the Unity Asset Store, perhaps you could find
-something useful for your game. Best regards, Mena.
-*/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PrometeoCarController : MonoBehaviour
+public class PrometeoCarController : NetworkBehaviour
 {
 
+    [Header("CAMERA")]
+    public Camera myCamera;
     //CAR SETUP
 
       [Space(20)]
@@ -158,9 +151,16 @@ public class PrometeoCarController : MonoBehaviour
       WheelFrictionCurve RRwheelFriction;
       float RRWextremumSlip;
 
+
+      
     // Start is called before the first frame update
+    //OnStart
     void Start()
     {
+      myCamera = GetComponentInChildren<Camera>();
+      if(!isLocalPlayer)
+        myCamera.enabled = false;
+      
       //In this part, we set the 'carRigidbody' value with the Rigidbody attached to this
       //gameObject. Also, we define the center of mass of the car with the Vector3 given
       //in the inspector.
@@ -265,7 +265,9 @@ public class PrometeoCarController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+      // Hacemos que sólo se pueda mover a si mismo el carro, no el de otro jugador
+      if (!isLocalPlayer)
+        return;
       //CAR DATA
 
       // We determine the speed of the car.
@@ -289,10 +291,12 @@ public class PrometeoCarController : MonoBehaviour
       */
       if (useTouchControls && touchControlsSetup){
 
+            //Touch Inputs
         if(throttlePTI.buttonPressed){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          GoForward();
+          //CancelInvoke("DecelerateCar");
+          //deceleratingCar = false;
+          //GoForward();
+          CMDGoForward();
         }
         if(reversePTI.buttonPressed){
           CancelInvoke("DecelerateCar");
@@ -327,40 +331,41 @@ public class PrometeoCarController : MonoBehaviour
 
       }else{
 
-        if(Input.GetKey(KeyCode.W)){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          GoForward();
+        // Mover con teclado
+        if(Input.GetKey(KeyCode.W))
+        {
+          CMDGoForward();
         }
-        if(Input.GetKey(KeyCode.S)){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          GoReverse();
+        if(Input.GetKey(KeyCode.S))
+        {
+          CMDGoReverse();
         }
 
-        if(Input.GetKey(KeyCode.A)){
-          TurnLeft();
+        if(Input.GetKey(KeyCode.A))
+        {
+          CMDTurnLeft();
         }
         if(Input.GetKey(KeyCode.D)){
-          TurnRight();
+          CMDTurnRight();
         }
-        if(Input.GetKey(KeyCode.Space)){
-          CancelInvoke("DecelerateCar");
-          deceleratingCar = false;
-          Handbrake();
+        if(Input.GetKey(KeyCode.Space))
+        {
+          CMDHandbrake();
         }
         if(Input.GetKeyUp(KeyCode.Space)){
-          RecoverTraction();
+          CMDRecoverTraction();
         }
         if((!Input.GetKey(KeyCode.S) && !Input.GetKey(KeyCode.W))){
-          ThrottleOff();
+          CMDThrottleOff();
         }
         if((!Input.GetKey(KeyCode.S) && !Input.GetKey(KeyCode.W)) && !Input.GetKey(KeyCode.Space) && !deceleratingCar){
           InvokeRepeating("DecelerateCar", 0f, 0.1f);
-          deceleratingCar = true;
+          //Desacelera si n ole picas a nada
+          //deceleratingCar = true;
+          CMDStartDecelerating();
         }
         if(!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D) && steeringAxis != 0f){
-          ResetSteeringAngle();
+          CMDResetSteeringAngle();
         }
 
       }
@@ -370,6 +375,69 @@ public class PrometeoCarController : MonoBehaviour
       AnimateWheelMeshes();
 
     }
+
+    #region CMDSInputs
+
+    [Command]
+    void CMDGoForward()
+    {
+      CancelInvoke("DecelerateCar");
+      deceleratingCar = false;
+      GoForward();
+    }
+
+    [Command]
+    void CMDGoReverse()
+    {
+      CancelInvoke("DecelerateCar");
+      deceleratingCar = false;
+      GoReverse();
+    }
+
+    [Command]
+    void CMDTurnLeft()
+    {
+      TurnLeft();
+    }
+
+    [Command]
+    void CMDTurnRight()
+    {
+      TurnRight();
+    }
+
+    [Command]
+    void CMDHandbrake()
+    {
+      CancelInvoke("DecelerateCar");
+      deceleratingCar = false;
+      Handbrake();
+    }
+
+    [Command]
+    void CMDRecoverTraction()
+    {
+      RecoverTraction();
+    }
+    [Command]
+    void CMDThrottleOff()
+    {
+      ThrottleOff();
+    }
+
+    [Command]
+    void CMDResetSteeringAngle()
+    {
+      ResetSteeringAngle();
+    }
+
+    [Command]
+    void CMDStartDecelerating()
+    {
+      InvokeRepeating(nameof(DecelerateCar), 0f, 0.1f);
+      deceleratingCar = true;
+    }
+    #endregion
 
     // This method converts the car speed data from float to string, and then set the text of the UI carSpeedText with this value.
     public void CarSpeedUI(){
@@ -533,9 +601,10 @@ public class PrometeoCarController : MonoBehaviour
           // could be a bit higher than expected.
     			frontLeftCollider.motorTorque = 0;
     			frontRightCollider.motorTorque = 0;
-          rearLeftCollider.motorTorque = 0;
+                rearLeftCollider.motorTorque = 0;
     			rearRightCollider.motorTorque = 0;
-    		}
+    		
+        }
       }
     }
 
