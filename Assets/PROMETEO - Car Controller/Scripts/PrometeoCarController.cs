@@ -4,16 +4,19 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class PrometeoCarController : NetworkBehaviour
 {
 
     [Header("CAMERA")]
     public Camera myCamera;
+    public Canvas canvas;
+    public TMP_Text lapsText;
+    public int laps = 0;
     //CAR SETUP
 
-      [Space(20)]
-      //[Header("CAR SETUP")]
+      
       [Space(10)]
       [Range(20, 190)]
       public int maxSpeed = 90; //The maximum speed that the car can reach in km/h.
@@ -158,8 +161,13 @@ public class PrometeoCarController : NetworkBehaviour
     void Start()
     {
       myCamera = GetComponentInChildren<Camera>();
-      if(!isLocalPlayer)
-        myCamera.enabled = false;
+        if (!isLocalPlayer)
+        {
+            myCamera.enabled = false;
+            canvas.enabled = false;
+            lapsText.text = laps.ToString();
+
+        }
       
       //In this part, we set the 'carRigidbody' value with the Rigidbody attached to this
       //gameObject. Also, we define the center of mass of the car with the Vector3 given
@@ -840,4 +848,13 @@ public class PrometeoCarController : NetworkBehaviour
       }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Finish line"))
+        {
+            laps++;
+            lapsText.text = laps.ToString();
+            Debug.Log("Vueltas: " + laps);
+        }
+    }
 }
