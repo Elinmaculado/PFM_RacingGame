@@ -119,7 +119,7 @@ public class PrometeoEditor : Editor{
     handbrakeButton = SO.FindProperty("handbrakeButton");
 
   }
-
+    /*
   public override void OnInspectorGUI(){
 
     SO.Update();
@@ -248,5 +248,6 @@ public class PrometeoEditor : Editor{
     SO.ApplyModifiedProperties();
 
   }
+    */
 
 }

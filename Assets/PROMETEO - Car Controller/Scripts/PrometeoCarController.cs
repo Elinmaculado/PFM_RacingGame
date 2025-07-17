@@ -4,16 +4,19 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class PrometeoCarController : NetworkBehaviour
 {
 
     [Header("CAMERA")]
     public Camera myCamera;
+    public Canvas canvas;
+    public TMP_Text lapsText;
+    public int laps = 0;
     //CAR SETUP
 
-      [Space(20)]
-      //[Header("CAR SETUP")]
+      
       [Space(10)]
       [Range(20, 190)]
       public int maxSpeed = 90; //The maximum speed that the car can reach in km/h.
@@ -158,8 +161,14 @@ public class PrometeoCarController : NetworkBehaviour
     void Start()
     {
       myCamera = GetComponentInChildren<Camera>();
-      if(!isLocalPlayer)
-        myCamera.enabled = false;
+        if (!isLocalPlayer)
+        {
+            myCamera.enabled = false;
+            canvas.enabled = false;
+            //lapsText.text = laps.ToString();
+            lapsText.text = "laps: " + laps;
+
+        }
       
       //In this part, we set the 'carRigidbody' value with the Rigidbody attached to this
       //gameObject. Also, we define the center of mass of the car with the Vector3 given
@@ -360,8 +369,8 @@ public class PrometeoCarController : NetworkBehaviour
         }
         if((!Input.GetKey(KeyCode.S) && !Input.GetKey(KeyCode.W)) && !Input.GetKey(KeyCode.Space) && !deceleratingCar){
           InvokeRepeating("DecelerateCar", 0f, 0.1f);
-          //Desacelera si n ole picas a nada
-          //deceleratingCar = true;
+          //Desacelera si no le picas a nada
+          deceleratingCar = true;
           CMDStartDecelerating();
         }
         if(!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D) && steeringAxis != 0f){
@@ -437,6 +446,12 @@ public class PrometeoCarController : NetworkBehaviour
       InvokeRepeating(nameof(DecelerateCar), 0f, 0.1f);
       deceleratingCar = true;
     }
+
+    [TargetRpc]
+    private void TargetSetSteeringAxis(float newAxis)
+    {
+      steeringAxis = newAxis;
+    }
     #endregion
 
     // This method converts the car speed data from float to string, and then set the text of the UI carSpeedText with this value.
@@ -499,6 +514,7 @@ public class PrometeoCarController : NetworkBehaviour
       var steeringAngle = steeringAxis * maxSteeringAngle;
       frontLeftCollider.steerAngle = Mathf.Lerp(frontLeftCollider.steerAngle, steeringAngle, steeringSpeed);
       frontRightCollider.steerAngle = Mathf.Lerp(frontRightCollider.steerAngle, steeringAngle, steeringSpeed);
+      TargetSetSteeringAxis(steeringAxis);
     }
 
     //The following method turns the front car wheels to the right. The speed of this movement will depend on the steeringSpeed variable.
@@ -510,6 +526,7 @@ public class PrometeoCarController : NetworkBehaviour
       var steeringAngle = steeringAxis * maxSteeringAngle;
       frontLeftCollider.steerAngle = Mathf.Lerp(frontLeftCollider.steerAngle, steeringAngle, steeringSpeed);
       frontRightCollider.steerAngle = Mathf.Lerp(frontRightCollider.steerAngle, steeringAngle, steeringSpeed);
+      TargetSetSteeringAxis(steeringAxis);
     }
 
     //The following method takes the front car wheels to their default position (rotation = 0). The speed of this movement will depend
@@ -526,6 +543,7 @@ public class PrometeoCarController : NetworkBehaviour
       var steeringAngle = steeringAxis * maxSteeringAngle;
       frontLeftCollider.steerAngle = Mathf.Lerp(frontLeftCollider.steerAngle, steeringAngle, steeringSpeed);
       frontRightCollider.steerAngle = Mathf.Lerp(frontRightCollider.steerAngle, steeringAngle, steeringSpeed);
+      TargetSetSteeringAxis(steeringAxis);
     }
 
     // This method matches both the position and rotation of the WheelColliders with the WheelMeshes.
@@ -663,7 +681,11 @@ public class PrometeoCarController : NetworkBehaviour
     // The following method decelerates the speed of the car according to the decelerationMultiplier variable, where
     // 1 is the slowest and 10 is the fastest deceleration. This method is called by the function InvokeRepeating,
     // usually every 0.1f when the user is not pressing W (throttle), S (reverse) or Space bar (handbrake).
-    public void DecelerateCar(){
+    public void DecelerateCar()
+    {
+      Vector3 foo = carRigidbody.linearVelocity;
+      foo.y = 0;
+      if(foo.magnitude < 0.01f) {return;}
       if(Mathf.Abs(localVelocityX) > 2.5f){
         isDrifting = true;
         DriftCarPS();
@@ -840,4 +862,14 @@ public class PrometeoCarController : NetworkBehaviour
       }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Finish line"))
+        {
+            laps++;
+            //lapsText.text = laps.ToString();
+            lapsText.text = "Laps: " + laps;
+            Debug.Log("Vueltas: " + laps);
+        }
+    }
 }
