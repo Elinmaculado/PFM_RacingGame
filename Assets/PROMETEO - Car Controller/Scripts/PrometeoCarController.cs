@@ -869,7 +869,6 @@ public class PrometeoCarController : NetworkBehaviour
             laps++;
             //lapsText.text = laps.ToString();
             lapsText.text = "Laps: " + laps;
-            Debug.Log("Vueltas: " + laps);
         }
     }
 }
