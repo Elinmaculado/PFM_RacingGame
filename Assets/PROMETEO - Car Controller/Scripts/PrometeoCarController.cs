@@ -274,9 +274,6 @@ public class PrometeoCarController : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-      // Hacemos que sólo se pueda mover a si mismo el carro, no el de otro jugador
-      if (!isLocalPlayer)
-        return;
       //CAR DATA
 
       // We determine the speed of the car.
@@ -285,6 +282,9 @@ public class PrometeoCarController : NetworkBehaviour
       localVelocityX = transform.InverseTransformDirection(carRigidbody.linearVelocity).x;
       // Save the local velocity of the car in the z axis. Used to know if the car is going forward or backwards.
       localVelocityZ = transform.InverseTransformDirection(carRigidbody.linearVelocity).z;
+      // Hacemos que sólo se pueda mover a si mismo el carro, no el de otro jugador
+      if (!isLocalPlayer)
+        return;
 
       //CAR PHYSICS
 
