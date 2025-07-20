@@ -165,8 +165,7 @@ public class PrometeoCarController : NetworkBehaviour
         {
             myCamera.enabled = false;
             canvas.enabled = false;
-            //lapsText.text = laps.ToString();
-            lapsText.text = "laps: " + laps;
+            lapsText.text = "Laps: " + laps + "/3";
 
         }
       
@@ -867,8 +866,7 @@ public class PrometeoCarController : NetworkBehaviour
         if (other.CompareTag("Finish line"))
         {
             laps++;
-            //lapsText.text = laps.ToString();
-            lapsText.text = "Laps: " + laps;
+            lapsText.text = "Laps: " + laps + "/3";
         }
     }
 }
