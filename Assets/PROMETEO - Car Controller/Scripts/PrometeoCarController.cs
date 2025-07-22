@@ -183,6 +183,14 @@ public class PrometeoCarController : NetworkBehaviour
     //OnStart
     void Start()
     {
+      if (isServer && isLocalPlayer)
+      {
+        playerText.text = "Player 1";
+      }
+      else
+      {
+        playerText.text = "Player 2";
+      }
       myCamera = GetComponentInChildren<Camera>();
         if (!isLocalPlayer)
         {
