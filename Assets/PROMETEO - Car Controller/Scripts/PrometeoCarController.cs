@@ -178,9 +178,7 @@ public class PrometeoCarController : NetworkBehaviour
           Debug.unityLogger.Log("RaceManager found");
         }
       }
-
-      // Start is called before the first frame update
-    //OnStart
+      
     void Start()
     {
       if (isServer && isLocalPlayer)
@@ -196,14 +194,8 @@ public class PrometeoCarController : NetworkBehaviour
         {
             myCamera.enabled = false;
             canvas.enabled = false;
-            //lapsText.text = "Laps: " + laps + "/3";
             raceManager.RegisterPlayer(this);
-
         }
-        // else
-        // {
-        //   
-        // }
       
       //In this part, we set the 'carRigidbody' value with the Rigidbody attached to this
       //gameObject. Also, we define the center of mass of the car with the Vector3 given
