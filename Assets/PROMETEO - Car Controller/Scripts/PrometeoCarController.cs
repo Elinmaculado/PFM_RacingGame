@@ -9,166 +9,201 @@ using TMPro;
 public class PrometeoCarController : NetworkBehaviour
 {
 
-    [Header("CAMERA")]
-    public Camera myCamera;
-    public Canvas canvas;
-    public TMP_Text lapsText;
-    public int laps = 0;
-    //CAR SETUP
+  [Header("CAMERA")] public Camera myCamera;
+  public Canvas canvas;
+  public TMP_Text lapsText;
+  public TMP_Text playerText;
+  public int laps = 0;
+  private RaceManager raceManager;
+  [SyncVar(hook = nameof(OnPlayerNumberChanged))]
+  public string playerNumber;
+  //CAR SETUP
 
+  #region  variablesDefault
+  
+  [Space(10)] [Range(20, 190)] public int maxSpeed = 90; //The maximum speed that the car can reach in km/h.
+
+  [Range(10, 120)]
+  public int maxReverseSpeed = 45; //The maximum speed that the car can reach while going on reverse in km/h.
+
+  [Range(1, 10)]
+  public int
+    accelerationMultiplier = 2; // How fast the car can accelerate. 1 is a slow acceleration and 10 is the fastest.
+
+  [Space(10)] [Range(10, 45)]
+  public int maxSteeringAngle = 27; // The maximum angle that the tires can reach while rotating the steering wheel.
+
+  [Range(0.1f, 1f)] public float steeringSpeed = 0.5f; // How fast the steering wheel turns.
+  [Space(10)] [Range(100, 600)] public int brakeForce = 350; // The strength of the wheel brakes.
+
+  [Range(1, 10)]
+  public int decelerationMultiplier = 2; // How fast the car decelerates when the user is not using the throttle.
+
+  [Range(1, 10)]
+  public int handbrakeDriftMultiplier = 5; // How much grip the car loses when the user hit the handbrake.
+
+  [Space(10)]
+  public Vector3
+    bodyMassCenter; // This is a vector that contains the center of mass of the car. I recommend to set this value
+  // in the points x = 0 and z = 0 of your car. You can select the value that you want in the y axis,
+  // however, you must notice that the higher this value is, the more unstable the car becomes.
+  // Usually the y value goes from 0 to 1.5.
+
+  //WHEELS
+
+  //[Header("WHEELS")]
+
+  /*
+  The following variables are used to store the wheels' data of the car. We need both the mesh-only game objects and wheel
+  collider components of the wheels. The wheel collider components and 3D meshes of the wheels cannot come from the same
+  game object; they must be separate game objects.
+  */
+  public GameObject frontLeftMesh;
+  public WheelCollider frontLeftCollider;
+  [Space(10)] public GameObject frontRightMesh;
+  public WheelCollider frontRightCollider;
+  [Space(10)] public GameObject rearLeftMesh;
+  public WheelCollider rearLeftCollider;
+  [Space(10)] public GameObject rearRightMesh;
+  public WheelCollider rearRightCollider;
+
+  //PARTICLE SYSTEMS
+
+  [Space(20)]
+  //[Header("EFFECTS")]
+  [Space(10)]
+  //The following variable lets you to set up particle systems in your car
+  public bool useEffects = false;
+
+  // The following particle systems are used as tire smoke when the car drifts.
+  public ParticleSystem RLWParticleSystem;
+  public ParticleSystem RRWParticleSystem;
+
+  [Space(10)]
+  // The following trail renderers are used as tire skids when the car loses traction.
+  public TrailRenderer RLWTireSkid;
+
+  public TrailRenderer RRWTireSkid;
+
+  //SPEED TEXT (UI)
+
+  [Space(20)]
+  //[Header("UI")]
+  [Space(10)]
+  //The following variable lets you to set up a UI text to display the speed of your car.
+  public bool useUI = false;
+
+  public Text carSpeedText; // Used to store the UI object that is going to show the speed of the car.
+
+  //SOUNDS
+
+  [Space(20)]
+  //[Header("Sounds")]
+  [Space(10)]
+  //The following variable lets you to set up sounds for your car such as the car engine or tire screech sounds.
+  public bool useSounds = false;
+
+  public AudioSource carEngineSound; // This variable stores the sound of the car engine.
+  public AudioSource tireScreechSound; // This variable stores the sound of the tire screech (when the car is drifting).
+  float initialCarEngineSoundPitch; // Used to store the initial pitch of the car engine sound.
+
+  //CONTROLS
+
+  [Space(20)]
+  //[Header("CONTROLS")]
+  [Space(10)]
+  //The following variables lets you to set up touch controls for mobile devices.
+  public bool useTouchControls = false;
+
+  public GameObject throttleButton;
+  PrometeoTouchInput throttlePTI;
+  public GameObject reverseButton;
+  PrometeoTouchInput reversePTI;
+  public GameObject turnRightButton;
+  PrometeoTouchInput turnRightPTI;
+  public GameObject turnLeftButton;
+  PrometeoTouchInput turnLeftPTI;
+  public GameObject handbrakeButton;
+  PrometeoTouchInput handbrakePTI;
+
+  //CAR DATA
+
+  [HideInInspector] public float carSpeed; // Used to store the speed of the car.
+  [HideInInspector] public bool isDrifting; // Used to know whether the car is drifting or not.
+  [HideInInspector] public bool isTractionLocked; // Used to know whether the traction of the car is locked or not.
+
+  //PRIVATE VARIABLES
+
+  /*
+  IMPORTANT: The following variables should not be modified manually since their values are automatically given via script.
+  */
+  Rigidbody carRigidbody; // Stores the car's rigidbody.
+  float steeringAxis; // Used to know whether the steering wheel has reached the maximum value. It goes from -1 to 1.
+  float throttleAxis; // Used to know whether the throttle has reached the maximum value. It goes from -1 to 1.
+  float driftingAxis;
+  float localVelocityZ;
+  float localVelocityX;
+  bool deceleratingCar;
+
+  bool touchControlsSetup = false;
+
+  /*
+  The following variables are used to store information about sideways friction of the wheels (such as
+  extremumSlip,extremumValue, asymptoteSlip, asymptoteValue and stiffness). We change this values to
+  make the car to start drifting.
+  */
+  WheelFrictionCurve FLwheelFriction;
+  float FLWextremumSlip;
+  WheelFrictionCurve FRwheelFriction;
+  float FRWextremumSlip;
+  WheelFrictionCurve RLwheelFriction;
+  float RLWextremumSlip;
+  WheelFrictionCurve RRwheelFriction;
+  float RRWextremumSlip;
+  #endregion
+//Asignar player1 o player 2
       
-      [Space(10)]
-      [Range(20, 190)]
-      public int maxSpeed = 90; //The maximum speed that the car can reach in km/h.
-      [Range(10, 120)]
-      public int maxReverseSpeed = 45; //The maximum speed that the car can reach while going on reverse in km/h.
-      [Range(1, 10)]
-      public int accelerationMultiplier = 2; // How fast the car can accelerate. 1 is a slow acceleration and 10 is the fastest.
-      [Space(10)]
-      [Range(10, 45)]
-      public int maxSteeringAngle = 27; // The maximum angle that the tires can reach while rotating the steering wheel.
-      [Range(0.1f, 1f)]
-      public float steeringSpeed = 0.5f; // How fast the steering wheel turns.
-      [Space(10)]
-      [Range(100, 600)]
-      public int brakeForce = 350; // The strength of the wheel brakes.
-      [Range(1, 10)]
-      public int decelerationMultiplier = 2; // How fast the car decelerates when the user is not using the throttle.
-      [Range(1, 10)]
-      public int handbrakeDriftMultiplier = 5; // How much grip the car loses when the user hit the handbrake.
-      [Space(10)]
-      public Vector3 bodyMassCenter; // This is a vector that contains the center of mass of the car. I recommend to set this value
-                                    // in the points x = 0 and z = 0 of your car. You can select the value that you want in the y axis,
-                                    // however, you must notice that the higher this value is, the more unstable the car becomes.
-                                    // Usually the y value goes from 0 to 1.5.
+      public override void OnStartServer()
+      {
+        base.OnStartServer();
+        
+        raceManager = FindObjectOfType<RaceManager>();
 
-    //WHEELS
+        if (raceManager == null)
+        {
+          Debug.Log("RaceManager not found");
+        }
+        else
+        {
+          Debug.unityLogger.Log("RaceManager found");
+        }
+      }
 
-      //[Header("WHEELS")]
-
-      /*
-      The following variables are used to store the wheels' data of the car. We need both the mesh-only game objects and wheel
-      collider components of the wheels. The wheel collider components and 3D meshes of the wheels cannot come from the same
-      game object; they must be separate game objects.
-      */
-      public GameObject frontLeftMesh;
-      public WheelCollider frontLeftCollider;
-      [Space(10)]
-      public GameObject frontRightMesh;
-      public WheelCollider frontRightCollider;
-      [Space(10)]
-      public GameObject rearLeftMesh;
-      public WheelCollider rearLeftCollider;
-      [Space(10)]
-      public GameObject rearRightMesh;
-      public WheelCollider rearRightCollider;
-
-    //PARTICLE SYSTEMS
-
-      [Space(20)]
-      //[Header("EFFECTS")]
-      [Space(10)]
-      //The following variable lets you to set up particle systems in your car
-      public bool useEffects = false;
-
-      // The following particle systems are used as tire smoke when the car drifts.
-      public ParticleSystem RLWParticleSystem;
-      public ParticleSystem RRWParticleSystem;
-
-      [Space(10)]
-      // The following trail renderers are used as tire skids when the car loses traction.
-      public TrailRenderer RLWTireSkid;
-      public TrailRenderer RRWTireSkid;
-
-    //SPEED TEXT (UI)
-
-      [Space(20)]
-      //[Header("UI")]
-      [Space(10)]
-      //The following variable lets you to set up a UI text to display the speed of your car.
-      public bool useUI = false;
-      public Text carSpeedText; // Used to store the UI object that is going to show the speed of the car.
-
-    //SOUNDS
-
-      [Space(20)]
-      //[Header("Sounds")]
-      [Space(10)]
-      //The following variable lets you to set up sounds for your car such as the car engine or tire screech sounds.
-      public bool useSounds = false;
-      public AudioSource carEngineSound; // This variable stores the sound of the car engine.
-      public AudioSource tireScreechSound; // This variable stores the sound of the tire screech (when the car is drifting).
-      float initialCarEngineSoundPitch; // Used to store the initial pitch of the car engine sound.
-
-    //CONTROLS
-
-      [Space(20)]
-      //[Header("CONTROLS")]
-      [Space(10)]
-      //The following variables lets you to set up touch controls for mobile devices.
-      public bool useTouchControls = false;
-      public GameObject throttleButton;
-      PrometeoTouchInput throttlePTI;
-      public GameObject reverseButton;
-      PrometeoTouchInput reversePTI;
-      public GameObject turnRightButton;
-      PrometeoTouchInput turnRightPTI;
-      public GameObject turnLeftButton;
-      PrometeoTouchInput turnLeftPTI;
-      public GameObject handbrakeButton;
-      PrometeoTouchInput handbrakePTI;
-
-    //CAR DATA
-
-      [HideInInspector]
-      public float carSpeed; // Used to store the speed of the car.
-      [HideInInspector]
-      public bool isDrifting; // Used to know whether the car is drifting or not.
-      [HideInInspector]
-      public bool isTractionLocked; // Used to know whether the traction of the car is locked or not.
-
-    //PRIVATE VARIABLES
-
-      /*
-      IMPORTANT: The following variables should not be modified manually since their values are automatically given via script.
-      */
-      Rigidbody carRigidbody; // Stores the car's rigidbody.
-      float steeringAxis; // Used to know whether the steering wheel has reached the maximum value. It goes from -1 to 1.
-      float throttleAxis; // Used to know whether the throttle has reached the maximum value. It goes from -1 to 1.
-      float driftingAxis;
-      float localVelocityZ;
-      float localVelocityX;
-      bool deceleratingCar;
-      bool touchControlsSetup = false;
-      /*
-      The following variables are used to store information about sideways friction of the wheels (such as
-      extremumSlip,extremumValue, asymptoteSlip, asymptoteValue and stiffness). We change this values to
-      make the car to start drifting.
-      */
-      WheelFrictionCurve FLwheelFriction;
-      float FLWextremumSlip;
-      WheelFrictionCurve FRwheelFriction;
-      float FRWextremumSlip;
-      WheelFrictionCurve RLwheelFriction;
-      float RLWextremumSlip;
-      WheelFrictionCurve RRwheelFriction;
-      float RRWextremumSlip;
-
-
-      
-    // Start is called before the first frame update
+      // Start is called before the first frame update
     //OnStart
     void Start()
     {
+      if (isServer && isLocalPlayer)
+      {
+        playerText.text = "Player 1";
+      }
+      else
+      {
+        playerText.text = "Player 2";
+      }
       myCamera = GetComponentInChildren<Camera>();
         if (!isLocalPlayer)
         {
             myCamera.enabled = false;
             canvas.enabled = false;
-            //lapsText.text = laps.ToString();
-            lapsText.text = "laps: " + laps;
+            //lapsText.text = "Laps: " + laps + "/3";
+            raceManager.RegisterPlayer(this);
 
         }
+        // else
+        // {
+        //   
+        // }
       
       //In this part, we set the 'carRigidbody' value with the Rigidbody attached to this
       //gameObject. Also, we define the center of mass of the car with the Vector3 given
@@ -271,12 +306,23 @@ public class PrometeoCarController : NetworkBehaviour
 
     }
 
+    void OnPlayerNumberChanged(string oldValue, string newValue)
+    {
+      if (!isLocalPlayer) return;
+
+      if (playerText == null)
+      {
+        playerText = canvas.GetComponentInChildren<TMP_Text>();
+      }
+
+      if (playerText != null)
+      {
+        playerText.text = newValue;
+      }
+    }
     // Update is called once per frame
     void Update()
     {
-      // Hacemos que sólo se pueda mover a si mismo el carro, no el de otro jugador
-      if (!isLocalPlayer)
-        return;
       //CAR DATA
 
       // We determine the speed of the car.
@@ -285,6 +331,9 @@ public class PrometeoCarController : NetworkBehaviour
       localVelocityX = transform.InverseTransformDirection(carRigidbody.linearVelocity).x;
       // Save the local velocity of the car in the z axis. Used to know if the car is going forward or backwards.
       localVelocityZ = transform.InverseTransformDirection(carRigidbody.linearVelocity).z;
+      // Hacemos que sólo se pueda mover a si mismo el carro, no el de otro jugador
+      if (!isLocalPlayer)
+        return;
 
       //CAR PHYSICS
 
@@ -867,9 +916,7 @@ public class PrometeoCarController : NetworkBehaviour
         if (other.CompareTag("Finish line"))
         {
             laps++;
-            //lapsText.text = laps.ToString();
-            lapsText.text = "Laps: " + laps;
-            Debug.Log("Vueltas: " + laps);
+            lapsText.text = "Laps: " + laps + "/3";
         }
     }
 }
